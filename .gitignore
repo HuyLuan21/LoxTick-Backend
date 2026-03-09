@@ -14,3 +14,8 @@ npm-debug.log*
 # OS
 .DS_Store
 Thumbs.db
+
+
+#log files
+logs/
+*.log

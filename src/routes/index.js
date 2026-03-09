@@ -18,7 +18,7 @@ router.get('/auth/me',        verifyToken, authCtrl.getMe)
 // VIDEOS
 router.get('/feed',                        videoCtrl.getFeed)
 router.get('/feed/following', verifyToken, videoCtrl.getFollowingFeed)
-router.post('/videos',        verifyToken, uploadVideo.fields([{ name: 'video' }, { name: 'thumbnail' }]), videoCtrl.uploadVideo)
+// router.post('/videos',        verifyToken, uploadVideo.fields([{ name: 'video' }, { name: 'thumbnail' }]), videoCtrl.uploadVideo)
 router.get('/videos/:id',                  videoCtrl.getVideo)
 router.delete('/videos/:id',  verifyToken, videoCtrl.deleteVideo)
 router.post('/videos/:id/like', verifyToken, videoCtrl.toggleLike)

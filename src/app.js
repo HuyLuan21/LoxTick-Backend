@@ -1,37 +1,50 @@
-require('dotenv').config()
-const express = require('express')
-const cors    = require('cors')
-const path    = require('path')
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const path = require("path");
+const createError = require("http-errors");
 
-const sequelize = require('./config/db')
-require('./models') // load tất cả models + associations
+// Import cấu hình và routes
+const sequelize = require("./config/db");
+require("./models"); // Đảm bảo các quan hệ (associations) được thiết lập
+const routes = require("./routes");
+const errorHandler = require("./Errors/errorHandler"); // Sử dụng file xử lý lỗi riêng của bạn
 
-const routes = require('./routes')
+const app = express();
 
-const app = express()
+// 1. Middlewares hệ thống
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-app.use(cors())
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
+// 2. Static files (Phục vụ ảnh/video đã upload)
+// app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
-app.use('/api', routes)
+// 3. API Routes
+app.use("/api", routes);
 
-app.use((req, res) => res.status(404).json({ message: 'Route không tồn tại' }))
-app.use((err, req, res, next) => {
-    console.error(err.message)
-    res.status(500).json({ message: err.message || 'Lỗi server' })
-})
+// 4. Xử lý lỗi 404 (Khi không tìm thấy Route nào khớp)
+app.use((req, res, next) => {
+  next(createError(404, `Không tìm thấy đường dẫn: ${req.method} ${req.url}`));
+});
 
-const PORT = process.env.PORT || 3000
+// 5. Global Error Handler (Phải đặt cuối cùng)
+app.use(errorHandler);
 
-// Kết nối DB rồi mới start server
-sequelize.authenticate()
-    .then(() => {
-        console.log('✅ Kết nối DB thành công')
-        app.listen(PORT, () => console.log(`🚀 Server chạy tại http://localhost:${PORT}`))
-    })
-    .catch(err => {
-        console.error('❌ Kết nối DB thất bại:', err.message)
-        process.exit(1)
-    })
+// 6. Kết nối Database và Khởi chạy Server
+const PORT = process.env.PORT || 3000;
+
+sequelize
+  .authenticate()
+  .then(() => {
+    console.log("✅ Kết nối Database thành công (Sequelize)");
+    // Chỉ sync khi cần thiết, hoặc dùng Migrations
+    // return sequelize.sync({ alter: true });
+    app.listen(PORT, () =>
+      console.log(`🚀 Server TikTok đang chạy tại http://localhost:${PORT}`),
+    );
+  })
+  .catch((err) => {
+    console.error("❌ Kết nối Database thất bại:", err.message);
+    process.exit(1);
+  });
