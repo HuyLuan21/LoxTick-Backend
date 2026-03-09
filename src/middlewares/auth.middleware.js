@@ -1,22 +1,33 @@
-const jwt = require('jsonwebtoken')
+const jwt = require("jsonwebtoken");
+const redisClient = require("../config/redis"); // Nhớ import redisClient vào đây
 
-const verifyToken = (req, res, next) => {
-    const token = req.headers.authorization?.split(' ')[1]
-    if (!token) return res.status(401).json({ message: 'Chưa đăng nhập' })
+const verifyToken = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(" ")[1];
 
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET)
-        req.user = decoded
-        next()
-    } catch {
-        res.status(401).json({ message: 'Token không hợp lệ' })
+    if (!token) {
+      return res.status(401).json({ message: "Bạn chưa đăng nhập" });
     }
-}
 
-const isAdmin = (req, res, next) => {
-    if (req.user?.role !== 'admin')
-        return res.status(403).json({ message: 'Không có quyền truy cập' })
-    next()
-}
+    // --- BƯỚC QUAN TRỌNG: Kiểm tra Token trong Blacklist ---
+    const isBlacklisted = await redisClient.get(`blacklist:${token}`);
+    if (isBlacklisted) {
+      return res.status(401).json({
+        message:
+          "Token đã hết hạn hoặc bạn đã đăng xuất. Vui lòng đăng nhập lại.",
+      });
+    }
+    // ------------------------------------------------------
 
-module.exports = { verifyToken, isAdmin }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res
+      .status(403)
+      .json({ message: "Token không hợp lệ hoặc đã hết hạn" });
+  }
+};
+
+module.exports = { verifyToken };

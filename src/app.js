@@ -17,8 +17,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 2. Static files (Phục vụ ảnh/video đã upload)
-// app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+// 2. Import Redis (đã được cấu hình để tự connect)
+require("./config/redis");
 
 // 3. API Routes
 app.use("/api", routes);
