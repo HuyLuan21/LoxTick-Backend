@@ -1,7 +1,9 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const { User } = require("../models");
 const redisClient = require("../config/redis");
+const { sendResetEmail } = require("../config/mailer");
 const registerUser = async (username, email, password) => {
   const hash = await bcrypt.hash(password, 10);
   return await User.create({ username, email, password_hash: hash });
@@ -33,6 +35,7 @@ const loginUser = async (email, password) => {
     user: {
       id: user.id,
       username: user.username,
+      display_name: user.display_name,
       email: user.email,
       avatar_url: user.avatar_url,
       role: user.role,
@@ -66,5 +69,38 @@ const logoutUser = async (token) => {
     throw error;
   }
 };
+const requestResetPassword = async (email) => {
+  const user = await User.findOne({ where: { email } });
+  if (!user) {
+    const error = new Error("Không tìm thấy tài khoản");
+    error.statusCode = 404;
+    throw error;
+  }
+  //tao token de reset password
+  const resetToken = crypto.randomBytes(32).toString("hex");
+  await redisClient.set(`reset:${resetToken}`, user.id, { EX: 900 });
+  const resetUrl = `http://localhost:3000/api/auth/reset-password?token=${resetToken}`;
+  console.log(resetUrl);
+  return { message: "Link reset đã được tạo", resetUrl };
+};
+const resetPassword = async (token, password) => {
+  const userId = await redisClient.get(`reset:${token}`);
+  if (!userId) {
+    const error = new Error("Token không hợp lệ");
+    error.statusCode = 400;
+    throw error;
+  }
+  const hash = await bcrypt.hash(password, 10);
+  await User.update({ password_hash: hash }, { where: { id: userId } });
+  await redisClient.del(`reset:${token}`);
+  return true;
+};
 
-module.exports = { registerUser, loginUser, getMeInfo, logoutUser };
+module.exports = {
+  registerUser,
+  loginUser,
+  getMeInfo,
+  logoutUser,
+  requestResetPassword,
+  resetPassword,
+};

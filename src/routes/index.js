@@ -14,6 +14,8 @@ router.post("/auth/register", authCtrl.register);
 router.post("/auth/login", authCtrl.login);
 router.get("/auth/me", verifyToken, authCtrl.getMe);
 router.post("/auth/logout", verifyToken, authCtrl.logout);
+router.post("/auth/forgot-password", authCtrl.forgotPassword);
+router.post("/auth/reset-password", authCtrl.handleResetPassword);
 
 // VIDEOS
 router.get("/feed", videoCtrl.getFeed);
@@ -33,7 +35,8 @@ router.delete("/comments/:commentId", verifyToken, commentCtrl.deleteComment);
 // USERS
 router.get("/users/:username", userCtrl.getProfile);
 router.get("/users/:username/videos", userCtrl.getUserVideos);
-router.put("/users/me", verifyToken, userCtrl.updateProfile);
+// cập nhật thông tin cá nhân của tôi
+router.put("/users/me", verifyToken, userCtrl.handleUpdateProfile);
 router.post("/users/:username/follow", verifyToken, userCtrl.toggleFollow);
 
 // SEARCH

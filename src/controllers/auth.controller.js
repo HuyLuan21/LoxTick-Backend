@@ -46,4 +46,35 @@ const logout = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login, getMe, logout };
+const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    const result = await authService.requestResetPassword(email);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const handleResetPassword = async (req, res, next) => {
+  try {
+    // Lấy token từ URL (query), lấy password từ Body
+    const token = req.query.token; 
+    const { password } = req.body; 
+
+    if (!token) return res.status(400).json({ message: "Token không tồn tại trong URL" });
+
+    await authService.resetPassword(token, password);
+    res.json({ message: "Đặt lại mật khẩu thành công" });
+  } catch (err) {
+    next(err);
+  }
+};
+module.exports = {
+  register,
+  login,
+  getMe,
+  logout,
+  forgotPassword,
+  handleResetPassword,
+};

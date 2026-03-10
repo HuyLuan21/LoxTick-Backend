@@ -7,7 +7,7 @@ const sequelize = new Sequelize(
   {
     host: process.env.DB_HOST,
     dialect: "mysql",
-    logging: false, // tắt log SQL, bật lại nếu muốn debug: console.log
+    logging: true, // tắt log SQL, bật lại nếu muốn debug: console.log
     pool: {
       max: 10,
       min: 0,
@@ -16,13 +16,12 @@ const sequelize = new Sequelize(
     },
     define: {
       timestamps: true,
-      underscored: true,
+      underscored: false,
       createdAt: "created_at",
       updatedAt: "updated_at",
       deletedAt: "deleted_at",
     },
   },
 );
-
 
 module.exports = sequelize;
