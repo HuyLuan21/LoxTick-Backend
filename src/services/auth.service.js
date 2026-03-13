@@ -80,7 +80,7 @@ const requestResetPassword = async (email) => {
   const resetToken = crypto.randomBytes(32).toString("hex");
   await redisClient.set(`reset:${resetToken}`, user.id, { EX: 900 });
   const resetUrl = `http://localhost:3000/api/auth/reset-password?token=${resetToken}`;
-  console.log(resetUrl);
+  sendResetEmail(user.email, resetUrl);
   return { message: "Link reset đã được tạo", resetUrl };
 };
 const resetPassword = async (token, password) => {

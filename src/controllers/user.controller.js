@@ -40,7 +40,6 @@ const handleUpdateProfile = async (req, res, next) => {
   try {
     const userId = req.user.id;
 
-    // Đẩy toàn bộ body vào Service xử lý
     const updatedUser = await userService.updateProfile(userId, req.body);
 
     res.json({
@@ -50,10 +49,9 @@ const handleUpdateProfile = async (req, res, next) => {
   } catch (err) {
     // Bắt lỗi trùng username từ Sequelize
     if (err.name === "SequelizeUniqueConstraintError") {
-      return res.status(409).json({ message: "Username này đã bị trùng" });
+      return res.status(409).json({ message: "Username này đã tồn tại" });
     }
 
-    // Bắt các lỗi logic (400, 404) được ném ra từ Service
     if (err.statusCode) {
       return res.status(err.statusCode).json({ message: err.message });
     }
