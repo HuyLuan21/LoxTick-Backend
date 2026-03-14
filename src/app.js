@@ -1,4 +1,6 @@
 require("dotenv").config();
+const globalError = require("./Errors/globalError");
+globalError();
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
