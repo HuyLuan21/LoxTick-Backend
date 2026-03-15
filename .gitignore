@@ -19,3 +19,11 @@ Thumbs.db
 #log files
 logs/
 *.log
+
+# env files (can opt-in for committing if needed)
+.env*.local
+
+.env
+.env.*
+#ignore all env files in the project except .env.example
+!*.env.example

@@ -1,4 +1,5 @@
-require("dotenv").config();
+require("./config/env");
+
 const globalError = require("./Errors/globalError");
 globalError();
 const express = require("express");
