@@ -40,7 +40,7 @@ const PORT = process.env.PORT || 3000;
 sequelize
   .authenticate()
   .then(() => {
-    console.log("✅ Kết nối Database thành công (Sequelize)");
+    console.log("✅ Kết nối Database thành công (Sequelize) ");
     // Chỉ sync khi cần thiết, hoặc dùng Migrations
     // return sequelize.sync({ alter: true });
     app.listen(PORT, () =>
