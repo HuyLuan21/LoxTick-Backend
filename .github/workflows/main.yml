@@ -26,5 +26,4 @@ jobs:
                       git pull
                       yarn install
                       yarn migrate:dev
-                      yarn seed:dev
                       pm2 reload lox_tick_api
