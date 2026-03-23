@@ -54,7 +54,7 @@ const logoutUser = async (token) => {
     }
     return true;
   } catch (error) {
-    throw AppError.internal(); // ✅ thay console.error + throw error
+    throw AppError.internal();
   }
 };
 

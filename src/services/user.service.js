@@ -1,12 +1,11 @@
 const { User } = require("../models");
+const AppError = require("../Errors/errors");
 
 const updateProfile = async (userId, updateData) => {
   // 1. Tìm user hiện tại
   const user = await User.findByPk(userId);
   if (!user) {
-    const error = new Error("Không tìm thấy tài khoản");
-    error.statusCode = 404;
-    throw error;
+    throw AppError.accountNotFound();
   }
 
   const updates = {};
@@ -23,11 +22,9 @@ const updateProfile = async (userId, updateData) => {
 
     // Nếu đã từng đổi và chưa đủ 30 ngày thì chặn
     if (diffDays < 30) {
-      const error = new Error(
+      throw AppError.badRequest(
         `Chưa đủ 30 ngày để đổi username. Cần đợi thêm ${30 - diffDays} ngày.`,
       );
-      error.statusCode = 400;
-      throw error;
     }
 
     // DÒNG QUAN TRỌNG NHẤT: Phải nhét cả 2 cái này vào object updates
@@ -44,9 +41,7 @@ const updateProfile = async (userId, updateData) => {
 
   // 4. Kiểm tra xem cuối cùng có cái gì để update không
   if (Object.keys(updates).length === 0) {
-    const error = new Error("Không có thông tin nào thay đổi");
-    error.statusCode = 400;
-    throw error;
+    throw AppError.badRequest("Không có thông tin nào thay đổi");
   }
 
   // 5. Thực thi cập nhật
@@ -69,5 +64,15 @@ const updateProfile = async (userId, updateData) => {
 
   return updatedUser;
 };
+const getProfile = async (username) => {
+  const user = await User.findOne({
+    where: { username },
+    attributes: { exclude: ["password_hash"] },
+  });
+  if (!user) {
+    throw AppError.accountNotFound();
+  }
+  return user;
+};
 
-module.exports = { updateProfile };
+module.exports = { updateProfile, getProfile };
