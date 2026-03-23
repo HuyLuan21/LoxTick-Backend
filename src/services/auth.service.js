@@ -13,10 +13,10 @@ const registerUser = async (username, email, password) => {
 
 const loginUser = async (email, password) => {
   const user = await User.findOne({ where: { email } });
-  if (!user) throw AppError.accountNotFound(); // ✅
+  if (!user) throw AppError.accountNotFound();
 
   const valid = await bcrypt.compare(password, user.password_hash);
-  if (!valid) throw AppError.invalidCredentials(); // ✅
+  if (!valid) throw AppError.invalidCredentials();
 
   const token = jwt.sign(
     { id: user.id, username: user.username, role: user.role },
@@ -59,23 +59,31 @@ const logoutUser = async (token) => {
 };
 
 const requestResetPassword = async (email) => {
+  const GenericMessage = "Link reset đã được tạo, vui lòng kiểm tra email";
   const user = await User.findOne({ where: { email } });
-  if (!user) throw AppError.accountNotFound(); // ✅
+  if (!user) return GenericMessage;
 
-  const resetToken = crypto.randomBytes(32).toString("hex");
-  await redisClient.set(`reset:${resetToken}`, user.id, { EX: 900 });
-  const resetUrl = `http://localhost:3000/api/auth/reset-password?token=${resetToken}`;
-  sendResetEmail(user.email, resetUrl);
-  return { message: "Link reset đã được tạo", resetUrl };
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const hashsedOTP = crypto.createHash("sha256").update(otp).digest("hex");
+  await redisClient.set(`reset:${hashsedOTP}`, user.id, { EX: 300 });
+  sendResetEmail(user.email, otp);
+  return GenericMessage;
 };
 
-const resetPassword = async (token, password) => {
-  const userId = await redisClient.get(`reset:${token}`);
+const resetPassword = async (otp, password) => {
+  const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
+  const userId = await redisClient.get(`reset:${hashedOtp}`);
   if (!userId) throw AppError.invalidToken();
 
   const hash = await bcrypt.hash(password, 10);
   await User.update({ password_hash: hash }, { where: { id: userId } });
-  await redisClient.del(`reset:${token}`);
+  await redisClient.del(`reset:${hashedOtp}`);
+  return true;
+};
+const verifyOtp = async (otp) => {
+  const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
+  const userId = await redisClient.get(`reset:${hashedOtp}`);
+  if (!userId) throw AppError.invalidToken();
   return true;
 };
 
@@ -86,4 +94,5 @@ module.exports = {
   logoutUser,
   requestResetPassword,
   resetPassword,
+  verifyOtp,
 };

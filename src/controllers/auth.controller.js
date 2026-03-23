@@ -58,14 +58,21 @@ const forgotPassword = async (req, res, next) => {
 
 const handleResetPassword = async (req, res, next) => {
   try {
-    // Lấy token từ URL (query), lấy password từ Body
-    const token = req.query.token; 
-    const { password } = req.body; 
+    const { otp, password } = req.body;
 
-    if (!token) return res.status(400).json({ message: "Token không tồn tại trong URL" });
-
-    await authService.resetPassword(token, password);
+    if (!otp) return res.status(400).json({ message: "Thiếu mã OTP" });
+    await authService.resetPassword(otp, password);
     res.json({ message: "Đặt lại mật khẩu thành công" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const verifyOtp = async (req, res, next) => {
+  try {
+    const { otp } = req.body;
+    const result = await authService.verifyOtp(otp);
+    res.json(result);
   } catch (err) {
     next(err);
   }
@@ -77,4 +84,5 @@ module.exports = {
   logout,
   forgotPassword,
   handleResetPassword,
+  verifyOtp,
 };

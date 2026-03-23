@@ -16,6 +16,7 @@ router.get("/auth/me", verifyToken, authCtrl.getMe);
 router.post("/auth/logout", verifyToken, authCtrl.logout);
 router.post("/auth/forgot-password", authCtrl.forgotPassword);
 router.post("/auth/reset-password", authCtrl.handleResetPassword);
+router.post("/auth/verify-otp", authCtrl.verifyOtp);
 
 // VIDEOS
 router.get("/feed", videoCtrl.getFeed);
