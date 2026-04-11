@@ -1,4 +1,5 @@
 const express = require("express");
+const cloudinaryRoutes = require("./cloudinary");
 const router = express.Router();
 
 const { verifyToken } = require("../middlewares/auth.middleware");
@@ -42,5 +43,8 @@ router.post("/users/:username/follow", verifyToken, userCtrl.toggleFollow);
 
 // SEARCH
 router.get("/search", searchCtrl.search);
+
+//cloudinary
+router.use("/cloudinary", cloudinaryRoutes);
 
 module.exports = router;

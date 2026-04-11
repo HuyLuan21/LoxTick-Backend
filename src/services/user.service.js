@@ -2,7 +2,6 @@ const { User } = require("../models");
 const AppError = require("../Errors/errors");
 
 const updateProfile = async (userId, updateData) => {
-  // 1. Tìm user hiện tại
   const user = await User.findByPk(userId);
   if (!user) {
     throw AppError.accountNotFound();
@@ -11,7 +10,6 @@ const updateProfile = async (userId, updateData) => {
   const updates = {};
   const { username, display_name, bio, avatar_url } = updateData;
 
-  // 2. Logic kiểm tra USERNAME (Chặn đổi trong 30 ngày)
   if (username && username.trim() !== user.username) {
     const now = new Date();
 
@@ -27,17 +25,14 @@ const updateProfile = async (userId, updateData) => {
       );
     }
 
-    // DÒNG QUAN TRỌNG NHẤT: Phải nhét cả 2 cái này vào object updates
     updates.username = username.trim();
     updates.username_updated_at = now;
   }
 
-  // 3. Gom các trường khác (Chỉ lấy những gì có gửi lên)
   if (bio !== undefined) updates.bio = bio;
   if (display_name !== undefined) updates.display_name = display_name;
   if (avatar_url !== undefined) updates.avatar_url = avatar_url;
 
-  // 4. Kiểm tra xem cuối cùng có cái gì để update không
   if (Object.keys(updates).length === 0) {
     throw AppError.badRequest("Không có thông tin nào thay đổi");
   }
@@ -46,7 +41,6 @@ const updateProfile = async (userId, updateData) => {
     where: { id: userId },
   });
 
-  // 6. Trả về dữ liệu mới nhất (Dùng reload hoặc findByPk)
   const updatedUser = await User.findByPk(userId, {
     attributes: { exclude: ["password_hash"] },
   });

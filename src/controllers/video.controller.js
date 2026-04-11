@@ -1,4 +1,5 @@
 const { Op } = require("sequelize");
+const videoService = require("../services/video.service");
 const {
   Video,
   User,
@@ -85,23 +86,12 @@ const getFollowingFeed = async (req, res) => {
 };
 
 // Upload video
-const uploadVideo = async (req, res) => {
+const uploadVideo = async (req, res, next) => {
   try {
-    const { caption, duration } = req.body;
-    const video_url = req.files?.video?.[0]?.filename;
-    const thumbnail_url = req.files?.thumbnail?.[0]?.filename;
+    const { video_url, caption } = req.body;
+    if (!video_url) return res.status(400).json({ message: "Thiếu URL video" });
 
-    if (!video_url)
-      return res.status(400).json({ message: "Thiếu file video" });
-
-    const video = await Video.create({
-      user_id: req.user.id,
-      video_url,
-      thumbnail_url,
-      caption,
-      duration,
-      status: "active",
-    });
+    const video = await videoService.uploadVideo(req.user.id, req.body);
 
     // Xử lý hashtags
     if (caption) {
@@ -114,9 +104,9 @@ const uploadVideo = async (req, res) => {
       }
     }
 
-    res.status(201).json({ message: "Upload thành công", video_id: video.id });
-  } catch {
-    res.status(500).json({ message: "Lỗi server" });
+    res.status(201).json({ message: "Đăng video thành công", video });
+  } catch (err) {
+    next(err);
   }
 };
 

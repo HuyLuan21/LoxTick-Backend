@@ -41,8 +41,6 @@ sequelize
   .authenticate()
   .then(() => {
     console.log("✅ Kết nối Database thành công (Sequelize) ");
-    // Chỉ sync khi cần thiết, hoặc dùng Migrations
-    // return sequelize.sync({ alter: true });
     app.listen(PORT, () =>
       console.log(`🚀 Server TikTok đang chạy tại http://localhost:${PORT}`),
     );
