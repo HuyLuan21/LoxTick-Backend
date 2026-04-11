@@ -9,20 +9,20 @@ module.exports = {
      * Example:
      * await queryInterface.createTable('users', { id: Sequelize.INTEGER });
      */
-    await queryInterface.addColumn("Videos", "published_at", {
+    await queryInterface.addColumn("videos", "published_at", {
       type: Sequelize.DATE,
       allowNull: true,
       comment: "Thời gian video được công khai",
     });
 
-    await queryInterface.addColumn("Videos", "allow_repost", {
+    await queryInterface.addColumn("videos", "allow_repost", {
       type: Sequelize.BOOLEAN,
       allowNull: true,
       defaultValue: true,
       comment: "Cho phép video được repost",
     });
 
-    await queryInterface.addColumn("Videos", "allow_comment", {
+    await queryInterface.addColumn("videos", "allow_comment", {
       type: Sequelize.BOOLEAN,
       allowNull: true,
       defaultValue: true,
@@ -37,8 +37,8 @@ module.exports = {
      * Example:
      * await queryInterface.dropTable('users');
      */
-    await queryInterface.removeColumn("Videos", "published_at");
-    await queryInterface.removeColumn("Videos", "allow_repost");
-    await queryInterface.removeColumn("Videos", "allow_comment");
+    await queryInterface.removeColumn("videos", "published_at");
+    await queryInterface.removeColumn("videos", "allow_repost");
+    await queryInterface.removeColumn("videos", "allow_comment");
   },
 };

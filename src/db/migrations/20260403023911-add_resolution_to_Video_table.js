@@ -9,13 +9,13 @@ module.exports = {
      * Example:
      * await queryInterface.createTable('users', { id: Sequelize.INTEGER });
      */
-    await queryInterface.addColumn("Videos", "resolution_x", {
+    await queryInterface.addColumn("videos", "resolution_x", {
       type: Sequelize.INTEGER,
       allowNull: false,
       comment: "Độ phân giải video (ví dụ: 1080p, 720p)",
     });
 
-    await queryInterface.addColumn("Videos", "resolution_y", {
+    await queryInterface.addColumn("videos", "resolution_y", {
       type: Sequelize.INTEGER,
       allowNull: false,
       comment: "Độ phân giải video (ví dụ: 1080p, 720p)",
@@ -29,7 +29,7 @@ module.exports = {
      * Example:
      * await queryInterface.dropTable('users');
      */
-    await queryInterface.removeColumn("Videos", "resolution_x");
-    await queryInterface.removeColumn("Videos", "resolution_y");
+    await queryInterface.removeColumn("videos", "resolution_x");
+    await queryInterface.removeColumn("videos", "resolution_y");
   },
 };
