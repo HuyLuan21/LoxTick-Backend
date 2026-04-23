@@ -35,11 +35,18 @@ router.get("/comments/:commentId/replies", commentCtrl.getReplies);
 router.delete("/comments/:commentId", verifyToken, commentCtrl.deleteComment);
 
 // USERS
+//Lấy ra thông tin người dùng
 router.get("/users/:username", userCtrl.getProfile);
+//Lấy ra video của người dùng
 router.get("/users/:username/videos", userCtrl.getUserVideos);
 // cập nhật thông tin cá nhân của tôi
 router.put("/users/me", verifyToken, userCtrl.handleUpdateProfile);
+// Follow người dùng, đã có tích hợp hủy follow
 router.post("/users/:username/follow", verifyToken, userCtrl.toggleFollow);
+// lấy ra danh sách người mình đang follow
+router.get("/users/:userId/following", verifyToken, userCtrl.getFollowingList);
+// lấy ra danh sách người follow mình
+router.get("/users/:userId/followers", verifyToken, userCtrl.getFollowersList);
 
 // SEARCH
 router.get("/search", searchCtrl.search);

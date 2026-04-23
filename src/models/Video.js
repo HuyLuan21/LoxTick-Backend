@@ -7,7 +7,6 @@ const Video = sequelize.define(
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
     user_id: { type: DataTypes.INTEGER, allowNull: false },
     video_url: { type: DataTypes.STRING(255), allowNull: false },
-    playback_url: { type: DataTypes.STRING(255), allowNull: true },
     public_id: { type: DataTypes.STRING(255), allowNull: true },
     thumbnail_url: { type: DataTypes.STRING(255), allowNull: true },
     caption: { type: DataTypes.TEXT, allowNull: true },

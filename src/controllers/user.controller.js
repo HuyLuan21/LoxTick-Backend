@@ -82,9 +82,40 @@ const toggleFollow = async (req, res, next) => {
   }
 };
 
+const getFollowingList = async (req, res, next) => {
+  try {
+    const limit = parseInt(req.query.limit) || 20;
+    const after = req.query.after || null;
+    const result = await userService.getFollowingList({
+      userId: req.params.userId,
+      limit,
+      after,
+    });
+    return res.json(result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getFollowersList = async (req, res, next) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const result = await userService.getFollowersList(
+      req.params.userId,
+      page,
+      limit,
+    );
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+};
 module.exports = {
   getProfile,
   getUserVideos,
   handleUpdateProfile,
   toggleFollow,
+  getFollowingList,
+  getFollowersList,
 };

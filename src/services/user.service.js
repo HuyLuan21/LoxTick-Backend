@@ -1,4 +1,5 @@
-const { User } = require("../models");
+const { User, Follow } = require("../models");
+const { Op } = require("sequelize");
 const AppError = require("../Errors/errors");
 
 const updateProfile = async (userId, updateData) => {
@@ -57,5 +58,68 @@ const getProfile = async (username) => {
   }
   return user;
 };
+const getFollowingList = async ({ userId, limit, after }) => {
+  const user = await User.findByPk(userId);
+  if (!user) throw AppError.accountNotFound();
 
-module.exports = { updateProfile, getProfile };
+  const options = {
+    attributes: ["id", "username", "display_name", "avatar_url"],
+    through: { attributes: ["created_at"] },
+    limit: limit + 1,
+    order: [["created_at", "DESC"]], // ← bỏ Follow ở đây
+  };
+
+  if (after) {
+    const decoded = JSON.parse(Buffer.from(after, "base64").toString("utf8"));
+    options.through = {
+      ...options.through,
+      where: { created_at: { [Op.lt]: decoded.created_at } },
+    };
+  }
+
+  const following = await user.getFollowing(options);
+
+  const hasMore = following.length > limit;
+  if (hasMore) following.pop();
+
+  const nextCursor = hasMore
+    ? Buffer.from(
+        JSON.stringify({
+          created_at: following[following.length - 1].Follow.created_at,
+        }),
+      ).toString("base64")
+    : null;
+
+  return { data: following, next_cursor: nextCursor, has_more: hasMore };
+};
+
+const getFollowersList = async (userId, page = 1, limit = 20) => {
+  const offset = (page - 1) * limit;
+
+  const user = await User.findByPk(userId, {
+    include: [
+      {
+        association: "followers",
+        attributes: ["id", "username", "display_name", "avatar_url"],
+        through: { attributes: [] },
+        limit,
+        offset,
+      },
+    ],
+  });
+
+  if (!user) throw AppError.accountNotFound();
+
+  return {
+    followers: user.followers,
+    page,
+    limit,
+  };
+};
+
+module.exports = {
+  updateProfile,
+  getProfile,
+  getFollowingList,
+  getFollowersList,
+};
