@@ -2,18 +2,20 @@ const authService = require("../services/auth.service");
 
 const register = async (req, res, next) => {
   try {
-    const { username, email, password } = req.body;
-    if (!username || !email || !password)
-      return res.status(400).json({ message: "Thiếu thông tin" });
-
-    await authService.registerUser(username, email, password);
+    const { username, email, otp, password } = req.body;
+    await authService.registerUser(username, email, otp, password);
     res.status(201).json({ message: "Đăng ký thành công" });
   } catch (err) {
-    if (err.name === "SequelizeUniqueConstraintError")
-      return res
-        .status(409)
-        .json({ message: "Username hoặc email đã tồn tại" });
     next(err); // Đẩy lỗi cho errorHandler.js xử lý
+  }
+};
+const requestRegisterOtp = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    const result = await authService.requestRegiterOtp(email);
+    res.json(result);
+  } catch (err) {
+    next(err);
   }
 };
 
@@ -56,12 +58,10 @@ const forgotPassword = async (req, res, next) => {
   }
 };
 
-const handleResetPassword = async (req, res, next) => {
+const ResetPassword = async (req, res, next) => {
   try {
-    const { otp, password } = req.body;
-
-    if (!otp) return res.status(400).json({ message: "Thiếu mã OTP" });
-    await authService.resetPassword(otp, password);
+    const { email, otp, password } = req.body;
+    await authService.resetPassword(email, otp, password);
     res.json({ message: "Đặt lại mật khẩu thành công" });
   } catch (err) {
     next(err);
@@ -70,19 +70,21 @@ const handleResetPassword = async (req, res, next) => {
 
 const verifyOtp = async (req, res, next) => {
   try {
-    const { otp } = req.body;
-    const result = await authService.verifyOtp(otp);
-    res.json(result);
+    const { type, email, otp } = req.body;
+    await authService.verifyOtp(type, email, otp);
+    res.json({ message: "Xác thực OTP thành công" });
   } catch (err) {
     next(err);
   }
 };
+
 module.exports = {
   register,
+  requestRegisterOtp,
   login,
   getMe,
   logout,
   forgotPassword,
-  handleResetPassword,
+  ResetPassword,
   verifyOtp,
 };

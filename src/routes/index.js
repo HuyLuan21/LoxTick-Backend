@@ -11,12 +11,21 @@ const userCtrl = require("../controllers/user.controller");
 const searchCtrl = require("../controllers/search.controller");
 
 // AUTH
+// đăng ký tài khoản
 router.post("/auth/register", authCtrl.register);
+// gửi mã otp để xác nhận đăng ký tài khoản
+router.post("/auth/request-register-otp", authCtrl.requestRegisterOtp);
+// đăng nhập tài khoản
 router.post("/auth/login", authCtrl.login);
+// lấy ra thông tin của tôi
 router.get("/auth/me", verifyToken, authCtrl.getMe);
+// đăng xuất tài khoản
 router.post("/auth/logout", verifyToken, authCtrl.logout);
+// yeu cau dat lai mat khau
 router.post("/auth/forgot-password", authCtrl.forgotPassword);
-router.post("/auth/reset-password", authCtrl.handleResetPassword);
+// đặt lại mật khẩu
+router.post("/auth/reset-password", authCtrl.ResetPassword);
+// xác nhận mã otp
 router.post("/auth/verify-otp", authCtrl.verifyOtp);
 
 // VIDEOS

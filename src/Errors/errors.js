@@ -7,6 +7,7 @@ const AppError = {
   unauthorized: () => createError(401, "Bạn chưa đăng nhập"),
   forbidden: () => createError(403, "Bạn không có quyền thực hiện"),
   emailAlreadyExists: () => createError(409, "Email đã được sử dụng"), // ← đăng ký trùng email
+  accountExist: () => createError(409, "Tài khoản đã tồn tại"),
 
   // Token
   invalidToken: () => createError(400, "Token không hợp lệ hoặc đã hết hạn"),
