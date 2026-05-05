@@ -1,4 +1,5 @@
 const { Op } = require("sequelize");
+const sequelize = require("../config/db");
 const videoService = require("../services/video.service");
 const {
   Video,
@@ -9,13 +10,23 @@ const {
   Hashtag,
   VideoHashtag,
 } = require("../models");
+const jwt = require("jsonwebtoken");
 
 // Feed đề xuất
 const getFeed = async (req, res) => {
   try {
     const { page = 1 } = req.query;
-    const limit = 20;
+    const limit = 100;
     const offset = (page - 1) * limit;
+
+    let currentUserId = 0;
+
+    const token = req.headers.authorization.slice(7); // Slice 7: remove Bearer
+
+    if (token) {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      currentUserId = decoded.id;
+    }
 
     const videos = await Video.findAll({
       where: { status: "active", visibility: "public" },
@@ -23,7 +34,21 @@ const getFeed = async (req, res) => {
         {
           model: User,
           as: "author",
-          attributes: ["id", "username", "avatar_url"],
+          attributes: [
+            "id",
+            "username",
+            "display_name",
+            "avatar_url",
+            [
+              sequelize.literal(`(
+                SELECT 1
+                FROM follows
+                WHERE follower_id = ${currentUserId}
+                  AND following_id = author.id
+              )`),
+              "is_following",
+            ],
+          ],
         },
       ],
       order: [

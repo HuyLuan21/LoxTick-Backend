@@ -1,16 +1,27 @@
 const { User, Video, Follow } = require("../models");
 const userService = require("../services/user.service");
-
+const jwt = require("jsonwebtoken");
 const getProfile = async (req, res, next) => {
+  let currentUserId = 0;
+
+  const token = req.headers.authorization.slice(7); // Slice 7: remove Bearer
+
+  if (token) {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    currentUserId = decoded.id;
+  }
   try {
     const user = await userService.getProfile(req.params.username);
 
-    const [followers, following] = await Promise.all([
+    const [followers, following, is_following] = await Promise.all([
       Follow.count({ where: { following_id: user.id } }),
       Follow.count({ where: { follower_id: user.id } }),
+      user
+        .getFollowers({ where: { id: currentUserId } })
+        .then((followers) => followers.length > 0),
     ]);
 
-    res.json({ ...user.toJSON(), followers, following });
+    res.json({ ...user.toJSON(), followers, following, is_following });
   } catch (err) {
     next(err);
   }
