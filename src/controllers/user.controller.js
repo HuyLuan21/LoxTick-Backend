@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 const getProfile = async (req, res, next) => {
   let currentUserId = 0;
 
-  const token = req.headers.authorization.slice(7); // Slice 7: remove Bearer
+  const token = req.headers.authorization?.slice(7); // Slice 7: remove Bearer
 
   if (token) {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);

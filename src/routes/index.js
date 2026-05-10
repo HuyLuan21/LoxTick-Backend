@@ -40,7 +40,6 @@ router.post("/videos/:id/save", verifyToken, videoCtrl.toggleSave);
 // COMMENTS
 router.get("/videos/:id/comments", commentCtrl.getComments);
 router.post("/videos/:id/comments", verifyToken, commentCtrl.addComment);
-router.get("/comments/:commentId/replies", commentCtrl.getReplies);
 router.delete("/comments/:commentId", verifyToken, commentCtrl.deleteComment);
 
 // USERS

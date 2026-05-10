@@ -11,25 +11,73 @@ const {
   VideoHashtag,
 } = require("../models");
 const jwt = require("jsonwebtoken");
+const { pickBy } = require("lodash");
 
 // Feed đề xuất
-const getFeed = async (req, res) => {
+const getFeed = async (req, res, next) => {
   try {
-    const { page = 1 } = req.query;
-    const limit = 100;
-    const offset = (page - 1) * limit;
+    const limit = 8;
+    const { cursor } = req.query; // cursor = "score_lastVideo_id"
 
     let currentUserId = 0;
-
-    const token = req.headers.authorization.slice(7); // Slice 7: remove Bearer
-
+    const token = req.headers.authorization?.slice(7);
     if (token) {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       currentUserId = decoded.id;
     }
 
+    const scoreExpr = `
+      (
+        (\`Video\`.\`like_count\`    / NULLIF(\`Video\`.\`view_count\`, 0)) * 10 +
+        (\`Video\`.\`comment_count\` / NULLIF(\`Video\`.\`view_count\`, 0)) * 20 +
+        (\`Video\`.\`repost_count\`  / NULLIF(\`Video\`.\`view_count\`, 0)) * 30 +
+        (\`Video\`.\`save_count\`    / NULLIF(\`Video\`.\`view_count\`, 0)) * 25
+      )
+      *
+      CASE
+        WHEN TIMESTAMPDIFF(HOUR, \`Video\`.\`created_at\`, NOW()) < 24  THEN 2.0
+        WHEN TIMESTAMPDIFF(HOUR, \`Video\`.\`created_at\`, NOW()) < 72  THEN 1.5
+        WHEN TIMESTAMPDIFF(HOUR, \`Video\`.\`created_at\`, NOW()) < 168 THEN 1.2
+        ELSE 1.0
+      END
+    `;
+
+    // Decode cursor
+    let cursorWhere = "";
+    if (cursor) {
+      const [lastScore, lastId] = cursor.split("_");
+      // Lấy video có score < lastScore, hoặc score = lastScore nhưng id < lastId
+      cursorWhere = `(${scoreExpr}) < ${lastScore} OR ((${scoreExpr}) = ${lastScore} AND \`Video\`.\`id\` < ${lastId})`;
+    }
+
     const videos = await Video.findAll({
-      where: { status: "active", visibility: "public" },
+      where: {
+        status: "active",
+        visibility: "public",
+        user_id: { [Op.ne]: currentUserId },
+        ...(cursorWhere && { [Op.and]: sequelize.literal(cursorWhere) }),
+      },
+      attributes: {
+        include: [
+          [sequelize.literal(scoreExpr), "score"],
+          [
+            sequelize.literal(`(
+              SELECT COUNT(*) > 0 FROM video_likes
+              WHERE video_likes.user_id = ${currentUserId}
+                AND video_likes.video_id = \`Video\`.\`id\`
+            )`),
+            "is_liked",
+          ],
+          [
+            sequelize.literal(`(
+              SELECT COUNT(*) > 0 FROM video_saves
+              WHERE video_saves.user_id = ${currentUserId}
+                AND video_saves.video_id = \`Video\`.\`id\`
+            )`),
+            "is_saved",
+          ],
+        ],
+      },
       include: [
         {
           model: User,
@@ -41,8 +89,7 @@ const getFeed = async (req, res) => {
             "avatar_url",
             [
               sequelize.literal(`(
-                SELECT 1
-                FROM follows
+                SELECT 1 FROM follows
                 WHERE follower_id = ${currentUserId}
                   AND following_id = author.id
               )`),
@@ -52,22 +99,25 @@ const getFeed = async (req, res) => {
         },
       ],
       order: [
-        // score = view*1 + like*3 + comment*4 + save*5 - time_decay
-        [
-          Video.sequelize.literal(
-            "'`Video`.`view_count`*1 + `Video`.`like_count`*3 + `Video`.`comment_count`*4 + `Video`.`save_count`*5 - TIMESTAMPDIFF(HOUR, `Video`.`created_at`, NOW())*0.1'",
-          ),
-          "DESC",
-        ],
+        [sequelize.literal(scoreExpr), "DESC"],
+        ["id", "DESC"],
       ],
       limit,
-      offset,
     });
 
-    res.json({ videos });
+    // Tạo cursor từ video cuối
+    const lastVideo = videos[videos.length - 1];
+    const nextCursor = lastVideo
+      ? `${lastVideo.dataValues.score}_${lastVideo.id}`
+      : null;
+
+    res.json({
+      videos,
+      nextCursor,
+      hasMore: videos.length === limit,
+    });
   } catch (error) {
-    console.error("Lỗi getFeed:", error);
-    res.status(500).json({ message: "Lỗi server" });
+    next(error);
   }
 };
 
