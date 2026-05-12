@@ -17,6 +17,11 @@ const VideoSave = sequelize.define('VideoSave', {
     video_id: { type: DataTypes.INTEGER, primaryKey: true },
 }, { tableName: 'video_saves', timestamps: true, createdAt: 'created_at', updatedAt: false })
 
+const CommentLike = sequelize.define('CommentLike', {
+    user_id:    { type: DataTypes.INTEGER, primaryKey: true },
+    comment_id: { type: DataTypes.INTEGER, primaryKey: true },
+}, { tableName: 'comment_likes', timestamps: true, createdAt: 'created_at', updatedAt: false })
+
 const Follow = sequelize.define('Follow', {
     follower_id:  { type: DataTypes.INTEGER, primaryKey: true },
     following_id: { type: DataTypes.INTEGER, primaryKey: true },
@@ -61,6 +66,10 @@ Comment.belongsTo(Video, { foreignKey: 'video_id' })
 Comment.hasMany(Comment,    { foreignKey: 'parent_id', as: 'replies' })
 Comment.belongsTo(Comment,  { foreignKey: 'parent_id', as: 'parent' })
 
+// Comment Like
+User.belongsToMany(Comment, { through: CommentLike, foreignKey: 'user_id',    as: 'likedComments' })
+Comment.belongsToMany(User, { through: CommentLike, foreignKey: 'comment_id', as: 'commentLikers' })
+
 // Like
 User.belongsToMany(Video, { through: VideoLike, foreignKey: 'user_id',  as: 'likedVideos' })
 Video.belongsToMany(User, { through: VideoLike, foreignKey: 'video_id', as: 'likers' })
@@ -85,7 +94,7 @@ Notification.belongsTo(Video,      { foreignKey: 'video_id', as: 'video' })
 module.exports = {
     sequelize,
     User, Video, Comment,
-    VideoLike, VideoSave, Follow,
+    VideoLike, VideoSave, CommentLike, Follow,
     Hashtag, VideoHashtag,
     Notification,
 }

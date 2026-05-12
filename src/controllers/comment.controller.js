@@ -1,11 +1,33 @@
 const { pickBy } = require("lodash");
-const { Comment, User } = require("../models");
+const { Comment, User, CommentLike } = require("../models");
 const { Op } = require("sequelize");
 const sequelize = require("../config/db.js");
+const jwt = require("jsonwebtoken");
+const redisClient = require("../config/redis");
+
+/**
+ * Helper: extract user from token without blocking (optional auth)
+ */
+const getUserFromToken = async (req) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(" ")[1];
+    if (!token) return null;
+
+    const isBlacklisted = await redisClient.get(`blacklist:${token}`);
+    if (isBlacklisted) return null;
+
+    return jwt.verify(token, process.env.JWT_SECRET);
+  } catch {
+    return null;
+  }
+};
 
 const getComments = async (req, res) => {
   const { id: video_id } = req.params;
   const { parent_id, cursor, limit = 20 } = req.query;
+
+  const currentUser = await getUserFromToken(req);
 
   /**
    * if parent_id is undefined => get all comments (from root)
@@ -40,21 +62,37 @@ const getComments = async (req, res) => {
         {
           model: User,
           as: "author",
-          attributes: ["id", "username", "avatar_url"],
+          attributes: ["id", "username", "display_name", "avatar_url"],
         },
       ],
       attributes: {
-        include: [[sequelize.literal(`
+        include: [
+          [
+            sequelize.literal(`
           (
             SELECT COUNT(1)
             FROM comments
             WHERE comments.parent_id = Comment.id
           )
-          `), "replies_count"]],
+          `),
+            "replies_count",
+          ],
+          // is_liked: check if current user liked this comment
+          [
+            sequelize.literal(`
+          (
+            SELECT COUNT(1)
+            FROM comment_likes
+            WHERE comment_likes.comment_id = Comment.id
+              AND comment_likes.user_id = ${currentUser ? Number(currentUser.id) : 0}
+          )
+          `),
+            "is_liked",
+          ],
+        ],
       },
       limit: Number(limit) + 1,
       order: [["id", "DESC"]],
-      logging: console.log,
     });
 
     /**
@@ -69,6 +107,15 @@ const getComments = async (req, res) => {
 
     const data = has_more ? comments.slice(0, limit) : comments;
 
+    // Convert is_liked from count to boolean
+    const formattedData = data.map((c) => {
+      const json = c.toJSON();
+      return {
+        ...json,
+        is_liked: !!Number(json.is_liked),
+      };
+    });
+
     const next_cursor = has_more
       ? Buffer.from(
           JSON.stringify({ last_id: data[data.length - 1].id }),
@@ -76,7 +123,7 @@ const getComments = async (req, res) => {
       : null;
 
     res.json({
-      comments: has_more ? data : comments,
+      comments: formattedData,
       next_cursor,
     });
   } catch (error) {
@@ -119,4 +166,26 @@ const deleteComment = async (req, res) => {
   }
 };
 
-module.exports = { getComments, addComment, deleteComment };
+const toggleCommentLike = async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const userId = req.user.id;
+
+    const existing = await CommentLike.findOne({
+      where: { user_id: userId, comment_id: commentId },
+    });
+
+    if (existing) {
+      await existing.destroy();
+      res.json({ liked: false });
+    } else {
+      await CommentLike.create({ user_id: userId, comment_id: commentId });
+      res.json({ liked: true });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+module.exports = { getComments, addComment, deleteComment, toggleCommentLike };

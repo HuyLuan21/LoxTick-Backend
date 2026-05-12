@@ -41,6 +41,7 @@ router.post("/videos/:id/save", verifyToken, videoCtrl.toggleSave);
 router.get("/videos/:id/comments", commentCtrl.getComments);
 router.post("/videos/:id/comments", verifyToken, commentCtrl.addComment);
 router.delete("/comments/:commentId", verifyToken, commentCtrl.deleteComment);
+router.post("/comments/:commentId/like", verifyToken, commentCtrl.toggleCommentLike);
 
 // USERS
 //Lấy ra thông tin người dùng

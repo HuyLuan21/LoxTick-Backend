@@ -7,6 +7,7 @@ const Comment = sequelize.define('Comment', {
     user_id:   { type: DataTypes.INTEGER },
     parent_id: { type: DataTypes.INTEGER, allowNull: true },
     content:   { type: DataTypes.TEXT },
+    like_count:{ type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
 }, {
     tableName: 'comments',
     timestamps: true,
