@@ -184,6 +184,25 @@ const uploadVideo = async (req, res, next) => {
     next(err);
   }
 };
+//Lấy ra toàn bộ video người dùng
+const getMyVideos = async (req, res) => {
+  try {
+    const videos = await Video.findAll({
+      where: { user_id: req.user.id },
+      include: [
+        {
+          model: User,
+          as: "author",
+          attributes: ["id", "username", "avatar_url"],
+        },
+      ],
+      order: [["created_at", "DESC"]],
+    });
+    res.json(videos);
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
 
 // Lấy 1 video
 const getVideo = async (req, res) => {
@@ -270,4 +289,5 @@ module.exports = {
   deleteVideo,
   toggleLike,
   toggleSave,
+  getMyVideos,
 };

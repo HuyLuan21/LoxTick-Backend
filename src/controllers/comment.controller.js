@@ -1,5 +1,5 @@
 const { pickBy } = require("lodash");
-const { Comment, User, CommentLike } = require("../models");
+const { Comment, User, CommentLike, Video } = require("../models");
 const { Op } = require("sequelize");
 const sequelize = require("../config/db.js");
 const jwt = require("jsonwebtoken");
@@ -145,9 +145,24 @@ const addComment = async (req, res) => {
       content,
     });
 
-    res.status(201).json({ message: "Đã bình luận", comment_id: comment.id });
-  } catch {
-    res.status(500).json({ message: "Lỗi server" });
+    const newComment = await Comment.findByPk(comment.id, {
+      include: [
+        {
+          model: User,
+          as: "author",
+          attributes: ["id", "username", "display_name", "avatar_url"],
+        },
+      ],
+    });
+
+    const commentData = newComment.toJSON();
+    commentData.replies_count = 0;
+    commentData.is_liked = false;
+    commentData.like_count = 0;
+
+    res.status(201).json({ message: "Đã bình luận", comment: commentData });
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi server", error: error });
   }
 };
 
@@ -156,12 +171,22 @@ const deleteComment = async (req, res) => {
     const comment = await Comment.findByPk(req.params.commentId);
     if (!comment)
       return res.status(404).json({ message: "Không tìm thấy comment" });
-    if (comment.user_id !== req.user.id)
+
+    let isAllowed = comment.user_id === req.user.id;
+    if (!isAllowed) {
+      const video = await Video.findByPk(comment.video_id);
+      if (video && video.user_id === req.user.id) {
+        isAllowed = true;
+      }
+    }
+
+    if (!isAllowed)
       return res.status(403).json({ message: "Không có quyền xóa" });
 
     await comment.destroy();
     res.json({ message: "Đã xóa comment" });
-  } catch {
+  } catch (error) {
+    console.error("Delete comment error:", error);
     res.status(500).json({ message: "Lỗi server" });
   }
 };

@@ -32,6 +32,7 @@ router.post("/auth/verify-otp", authCtrl.verifyOtp);
 router.get("/feed", videoCtrl.getFeed);
 router.get("/feed/following", verifyToken, videoCtrl.getFollowingFeed);
 router.post("/videos", verifyToken, videoCtrl.uploadVideo);
+router.get("/users/me/videos", verifyToken, videoCtrl.getMyVideos);
 router.get("/videos/:id", videoCtrl.getVideo);
 router.delete("/videos/:id", verifyToken, videoCtrl.deleteVideo);
 router.post("/videos/:id/like", verifyToken, videoCtrl.toggleLike);
@@ -41,7 +42,11 @@ router.post("/videos/:id/save", verifyToken, videoCtrl.toggleSave);
 router.get("/videos/:id/comments", commentCtrl.getComments);
 router.post("/videos/:id/comments", verifyToken, commentCtrl.addComment);
 router.delete("/comments/:commentId", verifyToken, commentCtrl.deleteComment);
-router.post("/comments/:commentId/like", verifyToken, commentCtrl.toggleCommentLike);
+router.post(
+  "/comments/:commentId/like",
+  verifyToken,
+  commentCtrl.toggleCommentLike,
+);
 
 // USERS
 //Lấy ra thông tin người dùng
