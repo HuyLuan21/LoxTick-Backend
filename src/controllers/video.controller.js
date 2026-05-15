@@ -122,23 +122,222 @@ const getFeed = async (req, res, next) => {
 };
 
 // Feed following
-const getFollowingFeed = async (req, res) => {
+const getFollowingFeed = async (req, res, next) => {
   try {
-    const { page = 1 } = req.query;
-    const limit = 20;
-    const offset = (page - 1) * limit;
+    const { page = 1, cursor } = req.query;
+    const limit = 8;
+    const offset = cursor ? 0 : (page - 1) * limit;
+
+    const currentUserId = req.user.id;
 
     // Lấy danh sách đang follow
     const follows = await Follow.findAll({
-      where: { follower_id: req.user.id },
+      where: { follower_id: currentUserId },
     });
     const followingIds = follows.map((f) => f.following_id);
 
-    if (!followingIds.length) return res.json({ videos: [] });
+    if (!followingIds.length) {
+      return res.json({ videos: [], nextCursor: null, hasMore: false });
+    }
+
+    let cursorWhere = "";
+    if (cursor) {
+      cursorWhere = `\`Video\`.\`id\` < ${cursor}`;
+    }
 
     const videos = await Video.findAll({
       where: {
         user_id: { [Op.in]: followingIds },
+        status: "active",
+        visibility: "public",
+        ...(cursorWhere && { [Op.and]: sequelize.literal(cursorWhere) }),
+      },
+      attributes: {
+        include: [
+          [
+            sequelize.literal(`(
+              SELECT COUNT(*) > 0 FROM video_likes
+              WHERE video_likes.user_id = ${currentUserId}
+                AND video_likes.video_id = \`Video\`.\`id\`
+            )`),
+            "is_liked",
+          ],
+          [
+            sequelize.literal(`(
+              SELECT COUNT(*) > 0 FROM video_saves
+              WHERE video_saves.user_id = ${currentUserId}
+                AND video_saves.video_id = \`Video\`.\`id\`
+            )`),
+            "is_saved",
+          ],
+        ],
+      },
+      include: [
+        {
+          model: User,
+          as: "author",
+          attributes: [
+            "id",
+            "username",
+            "display_name",
+            "avatar_url",
+            [
+              sequelize.literal(`(
+                SELECT 1 FROM follows
+                WHERE follower_id = ${currentUserId}
+                  AND following_id = author.id
+              )`),
+              "is_following",
+            ],
+          ],
+        },
+      ],
+      order: [["id", "DESC"]],
+      limit,
+      offset,
+    });
+
+    const lastVideo = videos[videos.length - 1];
+    const nextCursor = lastVideo ? lastVideo.id : null;
+
+    res.json({
+      videos,
+      nextCursor,
+      hasMore: videos.length === limit,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Feed Friends videos
+const getFriendVideos = async (req, res, next) => {
+  try {
+    const { page = 1, cursor } = req.query;
+    const limit = 8;
+    const offset = cursor ? 0 : (page - 1) * limit;
+
+    const currentUserId = req.user.id;
+
+    // Lấy danh sách bạn bè
+    const friends = await Follow.findAll({
+      where: { follower_id: currentUserId },
+    });
+    const friendIds = friends.map((f) => f.following_id);
+
+    if (!friendIds.length) {
+      return res.json({ videos: [], nextCursor: null, hasMore: false });
+    }
+
+    let cursorWhere = "";
+    if (cursor) {
+      cursorWhere = `\`Video\`.\`id\` < ${cursor}`;
+    }
+
+    const videos = await Video.findAll({
+      where: {
+        user_id: { [Op.in]: friendIds },
+        status: "active",
+        visibility: "public",
+        ...(cursorWhere && { [Op.and]: sequelize.literal(cursorWhere) }),
+      },
+      attributes: {
+        include: [
+          [
+            sequelize.literal(`(
+              SELECT COUNT(*) > 0 FROM video_likes
+              WHERE video_likes.user_id = ${currentUserId}
+                AND video_likes.video_id = \`Video\`.\`id\`
+            )`),
+            "is_liked",
+          ],
+          [
+            sequelize.literal(`(
+              SELECT COUNT(*) > 0 FROM video_saves
+              WHERE video_saves.user_id = ${currentUserId}
+                AND video_saves.video_id = \`Video\`.\`id\`
+            )`),
+            "is_saved",
+          ],
+        ],
+      },
+      include: [
+        {
+          model: User,
+          as: "author",
+          attributes: [
+            "id",
+            "username",
+            "display_name",
+            "avatar_url",
+            [
+              sequelize.literal(`(
+                SELECT 1 FROM follows
+                WHERE follower_id = ${currentUserId}
+                  AND following_id = author.id
+              )`),
+              "is_following",
+            ],
+          ],
+        },
+      ],
+      order: [["id", "DESC"]],
+      limit,
+      offset,
+    });
+
+    const lastVideo = videos[videos.length - 1];
+    const nextCursor = lastVideo ? lastVideo.id : null;
+
+    res.json({
+      videos,
+      nextCursor,
+      hasMore: videos.length === limit,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getUserVideos = async (req, res, next) => {
+  try {
+    const { username } = req.params;
+    const currentUserId = req.user.id;
+
+    const user = await User.findOne({ where: { username } });
+    if (!user) return res.status(404).json({ message: "Không tìm thấy user" });
+
+    const videos = await Video.findAll({
+      where: { user_id: user.id, status: "active", visibility: "public" },
+      include: [
+        {
+          model: User,
+          as: "author",
+          attributes: ["id", "username", "display_name", "avatar_url"],
+        },
+      ],
+      order: [["created_at", "DESC"]],
+    });
+
+    res.json(videos);
+  } catch (error) {
+    next(error);
+  }
+};
+const getUserLiked = async (req, res, next) => {
+  try {
+    const { username } = req.params;
+    const user = await User.findOne({ where: { username } });
+    if (!user) return res.status(404).json({ message: "Không tìm thấy user" });
+
+    const likes = await VideoLike.findAll({
+      where: { user_id: user.id },
+    });
+    const videoIds = likes.map((l) => l.video_id);
+
+    const videos = await Video.findAll({
+      where: {
+        id: { [Op.in]: videoIds },
         status: "active",
         visibility: "public",
       },
@@ -146,17 +345,56 @@ const getFollowingFeed = async (req, res) => {
         {
           model: User,
           as: "author",
-          attributes: ["id", "username", "avatar_url"],
+          attributes: ["id", "username", "display_name", "avatar_url"],
         },
       ],
       order: [["created_at", "DESC"]],
-      limit,
-      offset,
     });
 
-    res.json({ videos });
-  } catch {
-    res.status(500).json({ message: "Lỗi server" });
+    res.json(videos);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getUserSaved = async (req, res, next) => {
+  try {
+    const { username } = req.params;
+    const user = await User.findOne({ where: { username } });
+    if (!user) return res.status(404).json({ message: "Không tìm thấy user" });
+
+    const saves = await VideoSave.findAll({
+      where: { user_id: user.id },
+    });
+    const videoIds = saves.map((s) => s.video_id);
+
+    const videos = await Video.findAll({
+      where: {
+        id: { [Op.in]: videoIds },
+        status: "active",
+        visibility: "public",
+      },
+      include: [
+        {
+          model: User,
+          as: "author",
+          attributes: ["id", "username", "display_name", "avatar_url"],
+        },
+      ],
+      order: [["created_at", "DESC"]],
+    });
+
+    res.json(videos);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getUserRepost = async (req, res, next) => {
+  try {
+    res.json([]);
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -284,6 +522,11 @@ const toggleSave = async (req, res) => {
 module.exports = {
   getFeed,
   getFollowingFeed,
+  getFriendVideos,
+  getUserVideos,
+  getUserRepost,
+  getUserLiked,
+  getUserSaved,
   uploadVideo,
   getVideo,
   deleteVideo,

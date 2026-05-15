@@ -31,8 +31,12 @@ router.post("/auth/verify-otp", authCtrl.verifyOtp);
 // VIDEOS
 router.get("/feed", videoCtrl.getFeed);
 router.get("/feed/following", verifyToken, videoCtrl.getFollowingFeed);
+router.get("/feed/friends", verifyToken, videoCtrl.getFriendVideos);
 router.post("/videos", verifyToken, videoCtrl.uploadVideo);
-router.get("/users/me/videos", verifyToken, videoCtrl.getMyVideos);
+router.get("/users/:username/videos", verifyToken, videoCtrl.getUserVideos);
+router.get("/users/:username/repost", verifyToken, videoCtrl.getUserRepost);
+router.get("/users/:username/liked", verifyToken, videoCtrl.getUserLiked);
+router.get("/users/:username/saved", verifyToken, videoCtrl.getUserSaved);
 router.get("/videos/:id", videoCtrl.getVideo);
 router.delete("/videos/:id", verifyToken, videoCtrl.deleteVideo);
 router.post("/videos/:id/like", verifyToken, videoCtrl.toggleLike);
