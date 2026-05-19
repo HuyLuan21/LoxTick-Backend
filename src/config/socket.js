@@ -2,14 +2,23 @@ const { Server } = require("socket.io");
 
 let io;
 
+const allowedOrigins = ["http://localhost:5173", "https://loxtik.naul.click"];
+
 module.exports = {
   init: (httpServer) => {
     io = new Server(httpServer, {
       cors: {
-        origin: process.env.CLIENT_URL || "*", // Lấy từ .env, nếu không có thì mặc định là *
-        methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+        origin: function (origin, callback) {
+          if (!origin) return callback(null, true);
+          if (allowedOrigins.includes(origin)) {
+            callback(null, true);
+          } else {
+            callback(new Error("CORS not allowed by server"));
+          }
+        },
       },
     });
+
     return io;
   },
   getIO: () => {

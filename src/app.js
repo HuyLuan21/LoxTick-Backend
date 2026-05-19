@@ -14,6 +14,7 @@ const routes = require("./routes");
 const errorHandler = require("./Errors/errorHandler"); // Sử dụng file xử lý lỗi riêng của bạn
 const http = require("http");
 const socket = require("./config/socket");
+const setupSocketConnections = require("./socket");
 
 const app = express();
 
@@ -43,13 +44,7 @@ const server = http.createServer(app);
 // Khởi tạo Socket.IO
 const io = socket.init(server);
 
-io.on("connection", (socketClient) => {
-  console.log("🟢 Client connected:", socketClient.id);
-
-  socketClient.on("disconnect", () => {
-    console.log("🔴 Client disconnected:", socketClient.id);
-  });
-});
+setupSocketConnections(io);
 
 sequelize
   .authenticate()
