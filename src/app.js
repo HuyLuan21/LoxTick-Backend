@@ -12,6 +12,8 @@ const sequelize = require("./config/db");
 require("./models"); // Đảm bảo các quan hệ (associations) được thiết lập
 const routes = require("./routes");
 const errorHandler = require("./Errors/errorHandler"); // Sử dụng file xử lý lỗi riêng của bạn
+const http = require("http");
+const socket = require("./config/socket");
 
 const app = express();
 
@@ -36,12 +38,24 @@ app.use(errorHandler);
 
 // 6. Kết nối Database và Khởi chạy Server
 const PORT = process.env.PORT || 3000;
+const server = http.createServer(app);
+
+// Khởi tạo Socket.IO
+const io = socket.init(server);
+
+io.on("connection", (socketClient) => {
+  console.log("🟢 Client connected:", socketClient.id);
+
+  socketClient.on("disconnect", () => {
+    console.log("🔴 Client disconnected:", socketClient.id);
+  });
+});
 
 sequelize
   .authenticate()
   .then(() => {
     console.log("✅ Kết nối Database thành công (Sequelize) ");
-    app.listen(PORT, () =>
+    server.listen(PORT, () =>
       console.log(`🚀 Server TikTok đang chạy tại http://localhost:${PORT}`),
     );
   })
