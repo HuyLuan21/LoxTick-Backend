@@ -4,6 +4,7 @@ const { Op } = require("sequelize");
 const sequelize = require("../config/db.js");
 const jwt = require("jsonwebtoken");
 const redisClient = require("../config/redis");
+const { getIO, getSocket } = require("../config/socket.js");
 
 /**
  * Helper: extract user from token without blocking (optional auth)
@@ -135,11 +136,13 @@ const getComments = async (req, res) => {
 const addComment = async (req, res) => {
   try {
     const { content, parent_id } = req.body;
+    const {id: video_id} = req.params
+
     if (!content)
       return res.status(400).json({ message: "Nội dung không được trống" });
 
     const comment = await Comment.create({
-      video_id: req.params.id,
+      video_id,
       user_id: req.user.id,
       parent_id: parent_id || null,
       content,
@@ -160,8 +163,29 @@ const addComment = async (req, res) => {
     commentData.is_liked = false;
     commentData.like_count = 0;
 
+    // emit new comment to room video_comment:{video_id}
+    const io = getIO()
+
+    io.to(`video_comment:${video_id}`).emit("NEW_COMMENT", {
+      data: commentData,
+      meta: {
+        is_error: false,
+        message: "Thành công"
+      }
+    });
+
     res.status(201).json({ message: "Đã bình luận", comment: commentData });
   } catch (error) {
+    const socket = getSocket()
+
+    socket.emit("NEW_COMMENT", {
+      data: null,
+      meta: {
+        is_error: true,
+        message: "Có lỗi xảy ra khi tạo comment"
+      }
+    });
+
     res.status(500).json({ message: "Lỗi server", error: error });
   }
 };

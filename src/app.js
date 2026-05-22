@@ -13,8 +13,8 @@ require("./models"); // Đảm bảo các quan hệ (associations) được thi�
 const routes = require("./routes");
 const errorHandler = require("./Errors/errorHandler"); // Sử dụng file xử lý lỗi riêng của bạn
 const http = require("http");
-const socket = require("./config/socket");
-const setupSocketConnections = require("./socket");
+const { Server } = require("socket.io");
+const { socketIO } = require('./config/socket')
 
 const app = express();
 
@@ -41,10 +41,24 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 3000;
 const server = http.createServer(app);
 
-// Khởi tạo Socket.IO
-const io = socket.init(server);
+// Setup socket.io
+const allowedOrigins = ["http://localhost:5173", "https://loxtik.naul.click"]
 
-setupSocketConnections(io);
+const io = new Server(server, {
+    cors: {
+        origin: function (origin, callback) {
+            if (!origin) return callback(null, true)
+            if (allowedOrigins.includes(origin)) {
+                callback(null, true)
+            } else {
+                callback(new Error('CORS not allowed by server'))
+            }
+        },
+        credentials: true,
+    },
+})
+
+socketIO(io)
 
 sequelize
   .authenticate()

@@ -1,30 +1,27 @@
-const { Server } = require("socket.io");
+const { onConnection } = require("../socket")
 
-let io;
+let ioInstance
+let socket
 
-const allowedOrigins = ["http://localhost:5173", "https://loxtik.naul.click"];
+const socketIO = (io) => {
+    ioInstance = io
+
+    ioInstance.on("connection", (socketInstance) => {
+        onConnection(socketInstance, ioInstance)
+
+        socket = socketInstance
+
+        socketInstance.on("disconnect", async () => {
+            console.log("\x1b[33m===>>>Socket disconnected!!!", "\x1b[0m")
+        })
+    })
+}
+
+const getIO = () => ioInstance
+const getSocket = () => socket
 
 module.exports = {
-  init: (httpServer) => {
-    io = new Server(httpServer, {
-      cors: {
-        origin: function (origin, callback) {
-          if (!origin) return callback(null, true);
-          if (allowedOrigins.includes(origin)) {
-            callback(null, true);
-          } else {
-            callback(new Error("CORS not allowed by server"));
-          }
-        },
-      },
-    });
-
-    return io;
-  },
-  getIO: () => {
-    if (!io) {
-      throw new Error("Socket.io chưa được khởi tạo!");
-    }
-    return io;
-  },
-};
+    socketIO,
+    getIO,
+    getSocket
+}
