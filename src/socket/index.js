@@ -13,7 +13,7 @@ const onConnection = async (
         try {
             decoded = jwt.verify(token, process.env.JWT_SECRET)
             if (decoded) {
-                socketInstance.join(`user:${decoded.sub}`)
+                socketInstance.join(`user:${decoded.id}`)
 
                 socketInstance.data.decoded = decoded
             }

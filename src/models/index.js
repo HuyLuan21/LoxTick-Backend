@@ -2,6 +2,9 @@ const sequelize = require("../config/db");
 const User = require("./User");
 const Video = require("./Video");
 const Comment = require("./Comment");
+const Conversation = require("./Conversation");
+const ConversationMember = require("./ConversationMember");
+const Message = require("./Message");
 const { DataTypes } = require("sequelize");
 
 // =====================================
@@ -194,6 +197,31 @@ User.hasMany(Notification, { foreignKey: "user_id", as: "notifications" });
 Notification.belongsTo(User, { foreignKey: "actor_id", as: "actor" });
 Notification.belongsTo(Video, { foreignKey: "video_id", as: "video" });
 
+// Conversation (many-to-many qua conversation_members)
+User.belongsToMany(Conversation, {
+  through: ConversationMember,
+  foreignKey: "user_id",
+  otherKey: "conversation_id",
+  as: "conversations",
+});
+Conversation.belongsToMany(User, {
+  through: ConversationMember,
+  foreignKey: "conversation_id",
+  otherKey: "user_id",
+  as: "members",
+});
+
+// ConversationMember direct associations
+ConversationMember.belongsTo(User, { foreignKey: "user_id", as: "user" });
+ConversationMember.belongsTo(Conversation, { foreignKey: "conversation_id" });
+
+// Message
+Conversation.hasMany(Message, { foreignKey: "conversation_id", as: "messages" });
+Message.belongsTo(Conversation, { foreignKey: "conversation_id" });
+User.hasMany(Message, { foreignKey: "sender_id", as: "sentMessages" });
+Message.belongsTo(User, { foreignKey: "sender_id", as: "sender" });
+Message.belongsTo(Video, { foreignKey: "ref_video_id", as: "refVideo" });
+
 module.exports = {
   sequelize,
   User,
@@ -206,4 +234,7 @@ module.exports = {
   Hashtag,
   VideoHashtag,
   Notification,
+  Conversation,
+  ConversationMember,
+  Message,
 };

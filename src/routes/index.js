@@ -9,6 +9,7 @@ const videoCtrl = require("../controllers/video.controller");
 const commentCtrl = require("../controllers/comment.controller");
 const userCtrl = require("../controllers/user.controller");
 const searchCtrl = require("../controllers/search.controller");
+const messageCtrl = require("../controllers/message.controller");
 
 // AUTH
 // đăng ký tài khoản
@@ -71,5 +72,17 @@ router.get("/search", searchCtrl.search);
 
 //cloudinary
 router.use("/cloudinary", cloudinaryRoutes);
+
+// MESSAGES / CONVERSATIONS
+// Lấy danh sách cuộc trò chuyện
+router.get("/conversations", verifyToken, messageCtrl.getConversations);
+// Bắt đầu (hoặc lấy) cuộc trò chuyện với user khác
+router.post("/conversations/start", verifyToken, messageCtrl.startConversation);
+// Lấy tin nhắn của một cuộc trò chuyện
+router.get("/conversations/:id/messages", verifyToken, messageCtrl.getMessages);
+// Gửi tin nhắn
+router.post("/conversations/:id/messages", verifyToken, messageCtrl.sendMessage);
+// Đánh dấu đã đọc
+router.post("/conversations/:id/read", verifyToken, messageCtrl.markAsRead);
 
 module.exports = router;
