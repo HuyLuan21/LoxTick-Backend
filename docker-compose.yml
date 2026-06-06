@@ -1,0 +1,42 @@
+services:
+    db:
+        image: mysql:8.0
+        container_name: loxtik-mysql
+        environment:
+            MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+            MYSQL_DATABASE: ${DB_NAME}
+            MYSQL_USER: ${DB_USER}
+            MYSQL_PASSWORD: ${DB_PASSWORD}
+        ports:
+            - '3306:3306'
+        volumes:
+            - mysql_data:/var/lib/mysql
+        command: >
+            mysqld
+            --innodb-buffer-pool-size=256M
+            --max-connections=50
+            --character-set-server=utf8mb4
+            --collation-server=utf8mb4_general_ci
+        mem_limit: 512m
+        networks:
+            - loxtik
+
+    redis:
+        image: redis:6-alpine
+        container_name: loxtik-redis
+        ports:
+            - '6379:6379'
+        volumes:
+            - redis_data:/data
+        command: redis-server --maxmemory 128mb --maxmemory-policy noeviction
+        mem_limit: 256m
+        networks:
+            - loxtik
+
+volumes:
+    mysql_data:
+    redis_data:
+
+networks:
+    loxtik:
+        driver: bridge

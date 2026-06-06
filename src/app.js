@@ -42,7 +42,7 @@ const PORT = process.env.PORT || 3000;
 const server = http.createServer(app);
 
 // Setup socket.io
-const allowedOrigins = ["http://localhost:5173", "https://loxtik.naul.click"]
+const allowedOrigins = ["http://localhost:5173", "http://loxtik.naul.click"]
 
 const io = new Server(server, {
     cors: {
@@ -54,7 +54,6 @@ const io = new Server(server, {
                 callback(new Error('CORS not allowed by server'))
             }
         },
-        credentials: true,
     },
 })
 
